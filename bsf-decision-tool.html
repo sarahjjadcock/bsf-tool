@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BSF Rearing Suitability Tool — UW–Madison Extension</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #f4f4f4;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 32px 16px 48px;
+    }
+
+    :root {
+      --uw-red: #C5050C;
+      --uw-red-dark: #9B0000;
+      --uw-red-light: #F7E0E0;
+      --uw-red-mid: #E8B4B4;
+      --uw-gold: #F7F0D3;
+      --uw-gold-border: #E8D8A0;
+      --uw-gray: #646569;
+      --uw-gray-light: #F4F4F4;
+      --uw-green: #3B6D11;
+      --uw-green-light: #EAF3DE;
+      --uw-amber-dark: #633806;
+      --uw-amber-light: #FAEEDA;
+    }
+
+    .page-wrap {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .bsf-header {
+      background: var(--uw-red);
+      border-radius: 10px 10px 0 0;
+      padding: 20px 28px 18px;
+    }
+    .bsf-header-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin-bottom: 4px;
+    }
+    .bsf-header-title span {
+      font-size: 13px;
+      font-weight: 400;
+      opacity: 0.82;
+      margin-left: 10px;
+    }
+    .bsf-header-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.80);
+      font-family: Arial, sans-serif;
+      font-style: italic;
+    }
+
+    /* Body card */
+    .bsf-body {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 28px 28px 24px;
+    }
+
+    /* Progress */
+    .progress-wrap { margin-bottom: 24px; }
+    .progress-bar { display: flex; gap: 5px; margin-bottom: 7px; }
+    .progress-step { height: 5px; flex: 1; border-radius: 3px; background: #E0E0E0; transition: background 0.3s; }
+    .progress-step.done { background: var(--uw-red); }
+    .progress-step.active { background: #E87070; }
+    .progress-label { font-size: 11px; color: var(--uw-gray); font-family: Arial, sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    /* Questions */
+    .question { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; line-height: 1.3; font-family: Arial, sans-serif; }
+    .question-sub { font-size: 13px; color: var(--uw-gray); margin-bottom: 20px; line-height: 1.6; font-family: Arial, sans-serif; }
+
+    /* Option buttons */
+    .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .opt-btn {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 14px 15px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      font-family: Arial, sans-serif;
+      width: 100%;
+    }
+    .opt-btn:hover { background: var(--uw-gray-light); border-color: var(--uw-red); }
+    .opt-btn.selected { border: 2px solid var(--uw-red); background: var(--uw-red-light); }
+    .opt-btn.selected .opt-label { color: var(--uw-red-dark); }
+    .opt-btn.selected .opt-desc { color: var(--uw-red); }
+    .opt-label { font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+    .opt-desc { font-size: 11px; color: var(--uw-gray); line-height: 1.45; }
+
+    /* Navigation */
+    .nav-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+    .btn-back {
+      background: #fff; border: 1px solid #ccc; border-radius: 6px;
+      padding: 9px 18px; font-size: 13px; cursor: pointer;
+      color: var(--uw-gray); font-family: Arial, sans-serif;
+    }
+    .btn-back:hover { background: var(--uw-gray-light); }
+    .btn-next {
+      background: var(--uw-red); border: none; border-radius: 6px;
+      padding: 10px 24px; font-size: 13px; font-weight: 700;
+      cursor: pointer; color: #fff; font-family: Arial, sans-serif;
+      transition: background 0.15s;
+    }
+    .btn-next:hover { background: var(--uw-red-dark); }
+    .btn-next:disabled { background: #ccc; cursor: not-allowed; color: #888; }
+
+    /* Sliders / calculator */
+    .slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; font-family: Arial, sans-serif; }
+    .slider-row label { font-size: 13px; color: var(--uw-gray); min-width: 150px; }
+    .slider-row input[type=range] { flex: 1; accent-color: var(--uw-red); cursor: pointer; }
+    .slider-val { font-size: 13px; font-weight: 700; min-width: 75px; text-align: right; color: #1a1a1a; }
+
+    .divider { border: none; border-top: 1px solid #eee; margin: 18px 0; }
+
+    .info-box {
+      background: var(--uw-gold); border: 1px solid var(--uw-gold-border);
+      border-radius: 6px; padding: 11px 15px; margin-bottom: 18px;
+      font-size: 12px; color: #5a4a00; line-height: 1.6; font-family: Arial, sans-serif;
+    }
+
+    /* Metric cards */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 12px 0; }
+    .metric-card { background: var(--uw-gray-light); border-radius: 6px; padding: 12px 14px; }
+    .metric-label { font-size: 11px; color: var(--uw-gray); margin-bottom: 5px; font-family: Arial, sans-serif; }
+    .metric-val { font-size: 20px; font-weight: 700; color: #1a1a1a; font-family: Arial, sans-serif; }
+    .metric-val.good { color: var(--uw-green); }
+    .metric-val.warn { color: var(--uw-amber-dark); }
+    .metric-val.bad { color: var(--uw-red-dark); }
+
+    /* Result cards */
+    .result-card {
+      border-radius: 8px; border: 1px solid #ddd;
+      padding: 18px 20px; margin-bottom: 14px;
+      background: #fff; font-family: Arial, sans-serif;
+    }
+    .result-go    { border-left: 5px solid var(--uw-green); }
+    .result-caution { border-left: 5px solid #BA7517; }
+    .result-stop  { border-left: 5px solid var(--uw-red); }
+    .result-title { font-size: 17px; font-weight: 700; margin-bottom: 7px; }
+    .result-go .result-title    { color: var(--uw-green); }
+    .result-caution .result-title { color: var(--uw-amber-dark); }
+    .result-stop .result-title  { color: var(--uw-red-dark); }
+    .result-body { font-size: 13px; color: var(--uw-gray); line-height: 1.7; }
+
+    .flag-list { list-style: none; padding: 0; margin: 12px 0 0; }
+    .flag-list li {
+      font-size: 12px; color: var(--uw-gray); padding: 5px 0;
+      display: flex; gap: 9px; align-items: flex-start;
+      line-height: 1.55; font-family: Arial, sans-serif;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .flag-list li:last-child { border-bottom: none; }
+    .flag-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+    .restart-btn {
+      background: #fff; border: 1px solid #ccc; border-radius: 6px;
+      padding: 9px 20px; font-size: 13px; cursor: pointer;
+      color: var(--uw-gray); margin-top: 14px; font-family: Arial, sans-serif;
+    }
+    .restart-btn:hover { background: var(--uw-gray-light); }
+
+    /* Footer */
+    .bsf-footer {
+      margin-top: 18px;
+      padding: 14px 0 0;
+      border-top: 1px solid #e0e0e0;
+      font-size: 11px;
+      color: var(--uw-gray);
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+    .bsf-footer a { color: var(--uw-red); text-decoration: none; }
+    .bsf-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 560px) {
+      body { padding: 0 0 32px; }
+      .bsf-header { border-radius: 0; padding: 16px 18px; }
+      .bsf-body { border-radius: 0; padding: 20px 18px; border-left: none; border-right: none; }
+      .options-grid { grid-template-columns: 1fr 1fr; }
+      .slider-row { flex-wrap: wrap; }
+      .slider-row label { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="bsf-header">
+    <div class="bsf-header-title">
+      BSF Rearing Suitability Tool
+      <span>UW–Madison Extension</span>
+    </div>
+    <div class="bsf-header-sub">
+      <em>Hermetia illucens</em> &nbsp;&middot;&nbsp; Decision guide &amp; economics calculator &nbsp;&middot;&nbsp; cals.wisc.edu
+    </div>
+  </div>
+
+  <div class="bsf-body">
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progBar"></div>
+      <div class="progress-label" id="progLabel"></div>
+    </div>
+    <div id="stepContent"></div>
+
+    <div class="bsf-footer">
+      <strong>Disclaimer:</strong> Economic estimates are illustrative ranges based on published extension literature and should not be used as financial projections.
+      Consult your local UW–Madison Extension agent for site-specific guidance. &nbsp;|&nbsp;
+      <a href="https://cals.wisc.edu/extension" target="_blank">cals.wisc.edu/extension</a> &nbsp;|&nbsp;
+      For regulatory questions contact <a href="https://datcp.wi.gov" target="_blank">Wisconsin DATCP</a>.
+    </div>
+  </div>
+</div>
+
+<script>
+  const steps = [
+    {
+      id: "purpose",
+      section: "Getting started",
+      q: "What is your primary goal for raising BSF?",
+      sub: "Black soldier fly larvae (BSFL) serve several distinct purposes. Your goal shapes equipment, scale, and regulatory requirements.",
+      type: "choice",
+      options: [
+        { val: "waste",    label: "Organic waste reduction", desc: "Divert food scraps, manure, or ag byproducts" },
+        { val: "feed",     label: "Animal feed production",  desc: "Produce larval meal for poultry, fish, or pigs" },
+        { val: "research", label: "Research or education",   desc: "Academic study or classroom demonstration" },
+        { val: "compost",  label: "Soil amendment / frass",  desc: "Generate high-nutrient castings for crops" }
+      ]
+    },
+    {
+      id: "scale",
+      section: "Scale & space",
+      q: "What production scale are you planning?",
+      sub: "Scale affects regulatory oversight, startup costs, and the complexity of managing colonies.",
+      type: "choice",
+      options: [
+        { val: "backyard",   label: "Small / backyard", desc: "< 5 lbs waste/day, household or small farm" },
+        { val: "farm",       label: "Farm scale",       desc: "5–200 lbs waste/day, commercial operation" },
+        { val: "industrial", label: "Industrial",       desc: "> 200 lbs/day, dedicated facility" }
+      ]
+    },
+    {
+      id: "climate",
+      section: "Climate & facilities",
+      q: "Describe your local climate and available facility.",
+      sub: "BSFL thrive at 27–32 °C (80–90 °F). In Wisconsin, outdoor rearing is only viable June–August.",
+      type: "choice",
+      options: [
+        { val: "greenhouse", label: "Heated greenhouse / barn",        desc: "Climate control available year-round" },
+        { val: "indoor",     label: "Indoor climate-controlled space", desc: "Warehouse, building, or insulated room" },
+        { val: "seasonal",   label: "Outdoor / seasonal only",         desc: "No climate control; limited to warm months" },
+        { val: "none",       label: "No facility yet",                 desc: "Still planning or assessing feasibility" }
+      ]
+    },
+    {
+      id: "feedstock",
+      section: "Feedstock",
+      q: "What organic waste or feedstock will you use?",
+      sub: "Feedstock quality and consistency strongly influence larval growth and final product quality.",
+      type: "choice",
+      options: [
+        { val: "food",   label: "Pre-consumer food waste",  desc: "Restaurant, cafeteria, grocery surplus" },
+        { val: "manure", label: "Animal manure",            desc: "Dairy, poultry, swine, or mixed manure" },
+        { val: "ag",     label: "Crop / ag byproducts",     desc: "Silage, grain dust, vegetable trimmings" },
+        { val: "mixed",  label: "Mixed / uncertain",        desc: "Variable stream or not yet defined" }
+      ]
+    },
+    {
+      id: "calculator",
+      section: "Economics calculator",
+      q: "Estimate your startup and operating economics.",
+      sub: "Adjust the sliders to match your planned operation. Results appear on the next screen.",
+      type: "calc"
+    },
+    {
+      id: "result",
+      section: "Your assessment",
+      q: null,
+      type: "result"
+    }
+  ];
+
+  let current = 0;
+  const answers = {};
+
+  function renderProgress() {
+    const bar = document.getElementById("progBar");
+    const lbl = document.getElementById("progLabel");
+    bar.innerHTML = "";
+    const total = steps.length - 1;
+    steps.forEach((s, i) => {
+      const d = document.createElement("div");
+      d.className = "progress-step" + (i < current ? " done" : i === current ? " active" : "");
+      bar.appendChild(d);
+    });
+    lbl.textContent = current < total
+      ? "Step " + (current + 1) + " of " + total + " — " + steps[current].section
+      : "Assessment complete";
+  }
+
+  function renderStep() {
+    renderProgress();
+    const s = steps[current];
+    const el = document.getElementById("stepContent");
+    if (s.type === "result") { renderResult(el); return; }
+    if (s.type === "calc")   { renderCalc(el);   return; }
+
+    el.innerHTML =
+      '<div class="question">' + s.q + '</div>' +
+      '<div class="question-sub">' + s.sub + '</div>' +
+      '<div class="options-grid" id="opts"></div>' +
+      '<div class="nav-row">' +
+        (current > 0 ? '<button class="btn-back" onclick="goBack()">&#8592; Back</button>' : '') +
+        '<button class="btn-next" id="btnNext" onclick="goNext()" ' + (answers[s.id] ? '' : 'disabled') + '>Continue &#8594;</button>' +
+      '</div>';
+
+    const grid = document.getElementById("opts");
+    s.options.forEach(function(opt) {
+      const b = document.createElement("button");
+      b.className = "opt-btn" + (answers[s.id] === opt.val ? " selected" : "");
+      b.innerHTML = '<div class="opt-label">' + opt.label + '</div><div class="opt-desc">' + opt.desc + '</div>';
+      b.onclick = function() {
+        answers[s.id] = opt.val;
+        grid.querySelectorAll(".opt-btn").forEach(function(x) { x.classList.remove("selected"); });
+        b.classList.add("selected");
+        var btn = document.getElementById("btnNext");
+        if (btn) btn.disabled = false;
+      };
+      grid.appendChild(b);
+    });
+  }
+
+  function renderCalc(el) {
+    el.innerHTML =
+      '<div class="question">' + steps[current].q + '</div>' +
+      '<div class="question-sub">' + steps[current].sub + '</div>' +
+      '<div class="info-box">Estimates are illustrative ranges based on published extension literature. Consult your local UW–Madison Extension agent for site-specific projections.</div>' +
+      '<div class="slider-row"><label>Daily waste input (lbs)</label><input type="range" min="1" max="500" step="1" value="20" id="sl_waste" oninput="calcUpdate()"><span class="slider-val" id="out_waste">20 lbs</span></div>' +
+      '<div class="slider-row"><label>Startup budget ($)</label><input type="range" min="500" max="50000" step="500" value="3000" id="sl_startup" oninput="calcUpdate()"><span class="slider-val" id="out_startup">$3,000</span></div>' +
+      '<div class="slider-row"><label>Labor hrs / week</label><input type="range" min="1" max="40" step="1" value="5" id="sl_labor" oninput="calcUpdate()"><span class="slider-val" id="out_labor">5 hrs</span></div>' +
+      '<div class="slider-row"><label>Larval meal value ($/lb)</label><input type="range" min="0.25" max="3" step="0.25" value="1" id="sl_price" oninput="calcUpdate()"><span class="slider-val" id="out_price">$1.00/lb</span></div>' +
+      '<hr class="divider">' +
+      '<div class="metrics-grid" id="calcMetrics"></div>' +
+      '<div class="nav-row">' +
+        '<button class="btn-back" onclick="goBack()">&#8592; Back</button>' +
+        '<button class="btn-next" onclick="goNext()">See my assessment &#8594;</button>' +
+      '</div>';
+    calcUpdate();
+  }
+
+  function calcUpdate() {
+    var waste   = +document.getElementById("sl_waste").value;
+    var startup = +document.getElementById("sl_startup").value;
+    var labor   = +document.getElementById("sl_labor").value;
+    var price   = +document.getElementById("sl_price").value;
+
+    document.getElementById("out_waste").textContent   = waste + " lbs";
+    document.getElementById("out_startup").textContent = "$" + startup.toLocaleString();
+    document.getElementById("out_labor").textContent   = labor + " hrs";
+    document.getElementById("out_price").textContent   = "$" + price.toFixed(2) + "/lb";
+
+    var larvaeLbs      = Math.round(waste * 0.15);
+    var annualRevenue  = Math.round(larvaeLbs * price * 365);
+    var laborCostYear  = Math.round(labor * 52 * 18);
+    var annualCost     = Math.round(laborCostYear + startup * 0.2);
+    var netYear        = annualRevenue - annualCost;
+    var payback        = netYear > 0 ? (startup / netYear).toFixed(1) : "N/A";
+
+    answers._calc = { waste: waste, startup: startup, labor: labor, price: price,
+                      larvaeLbs: larvaeLbs, annualRevenue: annualRevenue,
+                      netYear: netYear, payback: payback };
+
+    function fmt(n) { return "$" + Math.abs(n).toLocaleString(); }
+
+    document.getElementById("calcMetrics").innerHTML =
+      '<div class="metric-card"><div class="metric-label">Daily larvae yield</div><div class="metric-val">' + larvaeLbs + ' lbs</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Est. annual revenue</div><div class="metric-val ' + (annualRevenue > 5000 ? 'good' : 'warn') + '">' + fmt(annualRevenue) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Est. annual costs</div><div class="metric-val">' + fmt(annualCost) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Net (yr 1+)</div><div class="metric-val ' + (netYear >= 0 ? 'good' : 'bad') + '">' + (netYear >= 0 ? fmt(netYear) : '-' + fmt(netYear)) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Payback period</div><div class="metric-val ' + (payback !== 'N/A' && +payback < 3 ? 'good' : 'warn') + '">' + (payback === 'N/A' ? 'N/A' : payback + ' yrs') + '</div></div>';
+  }
+
+  function renderResult(el) {
+    var p    = answers.purpose;
+    var sc   = answers.scale;
+    var cl   = answers.climate;
+    var fs   = answers.feedstock;
+    var calc = answers._calc || {};
+
+    var flags = [];
+    var score = 0;
+
+    if (cl === "greenhouse" || cl === "indoor") {
+      score += 3;
+    } else if (cl === "seasonal") {
+      score += 1;
+      flags.push({ icon: "&#9888;", text: "Outdoor rearing in Wisconsin is limited to approximately 3 warm months. Year-round production requires climate control." });
+    } else {
+      flags.push({ icon: "&#9888;", text: "No facility identified. Capital for climate-controlled housing will be required before production can begin." });
+    }
+
+    if (fs === "food") {
+      score += 3;
+    } else if (fs === "manure") {
+      score += 2;
+      flags.push({ icon: "&#8505;", text: "Manure-fed larvae may face additional regulatory scrutiny for use in animal feed under Wisconsin DATCP guidelines." });
+    } else if (fs === "ag") {
+      score += 2;
+    } else {
+      score += 1;
+      flags.push({ icon: "&#9888;", text: "Inconsistent or undefined feedstock causes volatile larval performance. Secure a reliable, consistent waste stream first." });
+    }
+
+    if (sc === "backyard") {
+      score += 2;
+    } else if (sc === "farm") {
+      score += 3;
+    } else {
+      score += 1;
+      flags.push({ icon: "&#8505;", text: "Industrial-scale operations in Wisconsin require DATCP organic matter review and possible solid waste facility licensing." });
+    }
+
+    score += 2;
+
+    if (calc.netYear !== undefined && calc.netYear < 0) {
+      flags.push({ icon: "&#9888;", text: "Current economics show a projected annual loss. Consider increasing waste volume, reducing labor input, or securing higher-value larvae markets before proceeding." });
+    }
+    if (calc.waste !== undefined && calc.waste < 5) {
+      flags.push({ icon: "&#8505;", text: "Very small waste volumes (<5 lbs/day) may be better suited to vermicomposting unless BSF is specifically desired for research or demonstration." });
+    }
+
+    var verdict, vTitle;
+    if (score >= 10)      { verdict = "go";      vTitle = "Strong fit — worth moving forward"; }
+    else if (score >= 7)  { verdict = "caution"; vTitle = "Conditional fit — address key gaps first"; }
+    else                  { verdict = "stop";    vTitle = "Not recommended at this time"; }
+
+    var lblMap = {
+      backyard: "small/backyard", farm: "farm", industrial: "industrial",
+      greenhouse: "greenhouse/barn", indoor: "indoor", seasonal: "outdoor/seasonal", none: "no facility",
+      food: "food waste", manure: "manure", ag: "ag byproducts", mixed: "mixed feedstock"
+    };
+
+    var recs = {
+      waste:    ["Confirm your county allows on-site organic waste processing.",
+                 "Contact your local DATCP office about compost and solid waste exemptions."],
+      feed:     ["Review AAFCO and Wisconsin DATCP guidelines for larvae in animal feed.",
+                 "Ensure feed-grade handling, traceability documentation, and proper labeling."],
+      research: ["UW–Madison has active BSF researchers — consider a collaborative or supervised arrangement.",
+                 "Small-scale, contained research rearing generally requires minimal permitting."],
+      compost:  ["BSF frass is a premium soil amendment; test nutrient content with the UW Soil & Plant Analysis Lab.",
+                 "Explore marketing frass to organic growers as a certified high-value input."]
+    };
+    var purposeRecs = recs[p] || [];
+
+    var bodyText = "Based on your inputs — " +
+      (lblMap[sc] || sc) + " scale &middot; " +
+      (lblMap[cl] || cl) + " &middot; " +
+      (lblMap[fs] || fs) + " — ";
+    if (verdict === "go")      bodyText += "your situation aligns well with successful BSF operations. Review the considerations below and connect with a UW Extension agent to finalize your plan.";
+    else if (verdict === "caution") bodyText += "there are important factors to resolve before investing. Address the flags below before committing capital.";
+    else                       bodyText += "several limiting factors make BSF rearing inadvisable right now. Revisit this tool after resolving the issues noted below.";
+
+    var flagsHtml = "";
+    if (flags.length) {
+      flagsHtml = '<ul class="flag-list">' +
+        flags.map(function(f) {
+          return '<li><span class="flag-icon">' + f.icon + '</span><span>' + f.text + '</span></li>';
+        }).join("") + '</ul>';
+    }
+
+    var calcHtml = "";
+    if (calc.larvaeLbs !== undefined) {
+      function fmt(n) { return "$" + Math.abs(n).toLocaleString(); }
+      calcHtml =
+        '<div class="result-card" style="margin-top:0">' +
+          '<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#1a1a1a;font-family:Arial,sans-serif;">Economic summary (your inputs)</div>' +
+          '<div class="metrics-grid">' +
+            '<div class="metric-card"><div class="metric-label">Daily yield</div><div class="metric-val">' + calc.larvaeLbs + ' lbs</div></div>' +
+            '<div class="metric-card"><div class="metric-label">Annual revenue</div><div class="metric-val ' + (calc.annualRevenue > 5000 ? 'good' : 'warn') + '">' + fmt(calc.annualRevenue) + '</div></div>' +
+            '<div class="metric-card"><div class="metric-label">Net (yr 1+)</div><div class="metric-val ' + (calc.netYear >= 0 ? 'good' : 'bad') + '">' + (calc.netYear >= 0 ? fmt(calc.netYear) : '-' + fmt(calc.netYear)) + '</div></div>' +
+            '<div class="metric-card"><div class="metric-label">Payback</div><div class="metric-val ' + (calc.payback !== 'N/A' && +calc.payback < 3 ? 'good' : 'warn') + '">' + (calc.payback === 'N/A' ? 'N/A' : calc.payback + ' yrs') + '</div></div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    var recsHtml =
+      '<div class="result-card" style="margin-top:0">' +
+        '<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#1a1a1a;font-family:Arial,sans-serif;">Recommended next steps</div>' +
+        '<ul class="flag-list">' +
+          purposeRecs.map(function(r) {
+            return '<li><span class="flag-icon">&#8594;</span><span>' + r + '</span></li>';
+          }).join("") +
+          '<li><span class="flag-icon">&#8594;</span><span>Contact <strong>UW–Madison Extension</strong> at <a href="https://cals.wisc.edu/extension" target="_blank" style="color:var(--uw-red)">cals.wisc.edu/extension</a> or your county office for a free site consultation.</span></li>' +
+          '<li><span class="flag-icon">&#8594;</span><span>Review Wisconsin DATCP solid waste and organic matter guidelines before purchasing equipment.</span></li>' +
+        '</ul>' +
+      '</div>';
+
+    el.innerHTML =
+      '<div class="result-card result-' + verdict + '">' +
+        '<div class="result-title">' + vTitle + '</div>' +
+        '<div class="result-body">' + bodyText + '</div>' +
+        flagsHtml +
+      '</div>' +
+      calcHtml +
+      recsHtml +
+      '<button class="restart-btn" onclick="restart()">&#8592; Start over</button>';
+  }
+
+  function goNext() {
+    var s = steps[current];
+    if (s.type === "choice" && !answers[s.id]) return;
+    current++;
+    renderStep();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function goBack() {
+    if (current > 0) { current--; renderStep(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  }
+
+  function restart() {
+    current = 0;
+    Object.keys(answers).forEach(function(k) { delete answers[k]; });
+    renderStep();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  renderStep();
+</script>
+</body>
+</html>
